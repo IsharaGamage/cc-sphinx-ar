@@ -5,11 +5,34 @@
         content="width=device-width, initial-scale=1.0">
 
   <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
-
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+
+    #startButton {
+      position: fixed;
+      z-index: 9999;
+      left: 50%;
+      bottom: 50px;
+      transform: translateX(-50%);
+      padding: 15px 28px;
+      font-size: 18px;
+      border: none;
+      border-radius: 30px;
+      background: #d49b25;
+      color: white;
+      font-weight: bold;
+    }
+  </style>
 </head>
 
-<body style="margin:0; overflow:hidden;">
+<body>
+
+<button id="startButton">Start AR Experience</button>
 
 <a-scene
   mindar-image="imageTargetSrc: ./targets.mind;"
@@ -18,15 +41,18 @@
   vr-mode-ui="enabled: false"
   device-orientation-permission-ui="enabled: false">
 
-  <a-assets>
+  <a-assets timeout="10000">
+
     <video
       id="englishVideo"
       src="./english.mp4"
       preload="auto"
       muted
       playsinline
-      webkit-playsinline>
+      webkit-playsinline
+      crossorigin="anonymous">
     </video>
+
   </a-assets>
 
   <a-camera
@@ -50,20 +76,78 @@
 </a-scene>
 
 <script>
-  const targetEl = document.querySelector('#target');
-  const video = document.querySelector('#englishVideo');
 
-  targetEl.addEventListener('targetFound', () => {
+const video = document.querySelector('#englishVideo');
+const target = document.querySelector('#target');
+const startButton = document.querySelector('#startButton');
+
+let videoEnabled = false;
+
+
+// User taps once to unlock video playback
+startButton.addEventListener('click', async () => {
+
+  try {
+
+    video.muted = true;
+
+    // Unlock playback on mobile browser
+    await video.play();
+
+    // Immediately pause until marker is found
+    video.pause();
     video.currentTime = 0;
 
-    video.play().catch(error => {
-      console.log("Video playback blocked:", error);
-    });
-  });
+    videoEnabled = true;
 
-  targetEl.addEventListener('targetLost', () => {
+    startButton.style.display = 'none';
+
+    console.log("Video playback unlocked.");
+
+  } catch(error) {
+
+    console.error("Could not unlock video:", error);
+
+  }
+
+});
+
+
+// Marker found
+target.addEventListener('targetFound', async () => {
+
+  console.log("TARGET FOUND");
+
+  if (!videoEnabled)
+    return;
+
+  try {
+
+    video.currentTime = 0;
+
+    await video.play();
+
+    console.log("VIDEO PLAYING");
+
+  } catch(error) {
+
+    console.error("Playback failed:", error);
+
+  }
+
+});
+
+
+// Marker lost
+target.addEventListener('targetLost', () => {
+
+  console.log("TARGET LOST");
+
+  if (!video.paused)
     video.pause();
-  });
+
+});
+
 </script>
 
 </body>
