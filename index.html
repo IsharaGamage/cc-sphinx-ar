@@ -1,11 +1,32 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+  <script>
+    AFRAME.registerComponent('video-handler', {
+      init: function () {
+        const video = document.querySelector('#englishVideo');
+
+        this.el.addEventListener('targetFound', () => {
+          console.log('TARGET FOUND');
+          video.currentTime = 0;
+
+          video.play()
+            .then(() => console.log('VIDEO PLAYING'))
+            .catch(err => console.error('VIDEO PLAY ERROR:', err));
+        });
+
+        this.el.addEventListener('targetLost', () => {
+          console.log('TARGET LOST');
+          video.pause();
+        });
+      }
+    });
+  </script>
 
   <style>
     body {
@@ -17,15 +38,15 @@
       position: fixed;
       z-index: 9999;
       left: 50%;
-      bottom: 50px;
+      bottom: 40px;
       transform: translateX(-50%);
-      padding: 15px 28px;
-      font-size: 18px;
+      padding: 14px 24px;
       border: none;
-      border-radius: 30px;
-      background: #d49b25;
-      color: white;
+      border-radius: 28px;
+      font-size: 17px;
       font-weight: bold;
+      background: #d5a229;
+      color: white;
     }
   </style>
 </head>
@@ -35,17 +56,17 @@
 <button id="startButton">Start AR Experience</button>
 
 <a-scene
-  mindar-image="imageTargetSrc: ./targets.mind;"
+  mindar-image="imageTargetSrc: ./targets.mind?v=5;"
   color-space="sRGB"
   renderer="colorManagement: true; physicallyCorrectLights: true"
   vr-mode-ui="enabled: false"
   device-orientation-permission-ui="enabled: false">
 
-  <a-assets timeout="10000">
+  <a-assets timeout="20000">
 
     <video
       id="englishVideo"
-      src="./english.mp4"
+      src="./english.mp4?v=5"
       preload="auto"
       muted
       playsinline
@@ -61,14 +82,14 @@
   </a-camera>
 
   <a-entity
-    id="target"
-    mindar-image-target="targetIndex: 0">
+    mindar-image-target="targetIndex: 0"
+    video-handler>
 
     <a-video
       src="#englishVideo"
-      position="0 0 0.01"
       width="1"
-      height="0.75">
+      height="0.75"
+      position="0 0 0.01">
     </a-video>
 
   </a-entity>
@@ -76,78 +97,26 @@
 </a-scene>
 
 <script>
+  const video = document.querySelector('#englishVideo');
+  const button = document.querySelector('#startButton');
 
-const video = document.querySelector('#englishVideo');
-const target = document.querySelector('#target');
-const startButton = document.querySelector('#startButton');
+  button.addEventListener('click', async () => {
+    try {
+      video.muted = true;
 
-let videoEnabled = false;
+      // Unlock video on mobile browser
+      await video.play();
+      video.pause();
+      video.currentTime = 0;
 
+      button.style.display = 'none';
 
-// User taps once to unlock video playback
-startButton.addEventListener('click', async () => {
-
-  try {
-
-    video.muted = true;
-
-    // Unlock playback on mobile browser
-    await video.play();
-
-    // Immediately pause until marker is found
-    video.pause();
-    video.currentTime = 0;
-
-    videoEnabled = true;
-
-    startButton.style.display = 'none';
-
-    console.log("Video playback unlocked.");
-
-  } catch(error) {
-
-    console.error("Could not unlock video:", error);
-
-  }
-
-});
-
-
-// Marker found
-target.addEventListener('targetFound', async () => {
-
-  console.log("TARGET FOUND");
-
-  if (!videoEnabled)
-    return;
-
-  try {
-
-    video.currentTime = 0;
-
-    await video.play();
-
-    console.log("VIDEO PLAYING");
-
-  } catch(error) {
-
-    console.error("Playback failed:", error);
-
-  }
-
-});
-
-
-// Marker lost
-target.addEventListener('targetLost', () => {
-
-  console.log("TARGET LOST");
-
-  if (!video.paused)
-    video.pause();
-
-});
-
+      console.log('VIDEO UNLOCKED');
+    } catch (err) {
+      console.error('UNLOCK ERROR:', err);
+      alert('Please tap again to enable video playback.');
+    }
+  });
 </script>
 
 </body>
